@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: metrics-server
+  namespace: kube-system
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: metrics-server
+  namespace: kube-system
+  labels:
+    app: metrics-server
+spec:
+  selector:
+    matchLabels:
+      app: metrics-server
+  template:
+    metadata:
+      name: metrics-server
+      labels:
+        app: metrics-server
+    spec:
+      volumes:
+      - name: secrets
+        hostPath:
+          path: "/home/jb/go/src/github.com/DataDog/pupernetes/sandbox/secrets"
+      serviceAccountName: metrics-server
+      containers:
+      - name: metrics-server
+        image: gcr.io/google_containers/metrics-server-amd64:v0.2.1
+        volumeMounts:
+        - name: secrets
+          mountPath: /etc/secrets
+        command:
+        - /metrics-server
+        - --source=kubernetes.summary_api:''?useServiceAccount=true&kubeletHttps=true&kubeletPort=10250
+        - --tls-ca-file=/etc/secrets/apiserver.issuing_ca
+        - --tls-cert-file=/etc/secrets/apiserver.certificate
+        - --tls-private-key-file=/etc/secrets/apiserver.private_key
+        - --v=8
+        - --requestheader-allowed-names=aggregator,e2e
+        - --requestheader-extra-headers-prefix=x-remote-extra-
+        - --requestheader-group-headers=x-remote-group
+        - --requestheader-username-headers=x-remote-user

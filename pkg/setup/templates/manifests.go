@@ -132,6 +132,13 @@ spec:
     - --audit-policy-file=/etc/kubernetes/audit.yaml
     - --etcd-compaction-interval=0
     - --event-ttl=10m
+    - --requestheader-client-ca-file=/etc/secrets/apiserver.issuing_ca
+    - --requestheader-allowed-names=aggregator,e2e
+    - --requestheader-extra-headers-prefix=X-Remote-Extra-
+    - --requestheader-group-headers=X-Remote-Group
+    - --requestheader-username-headers=X-Remote-User
+    - --proxy-client-cert-file=/etc/secrets/apiserver.certificate
+    - --proxy-client-key-file=/etc/secrets/apiserver.private_key
 
     volumeMounts:
       - name: secrets
@@ -193,6 +200,7 @@ spec:
     - --concurrent-resource-quota-syncs=2
     - --concurrent-service-syncs=1
     - --concurrent-serviceaccount-token-syncs=2
+    - --horizontal-pod-autoscaler-use-rest-clients=true
     volumeMounts:
       - name: secrets
         mountPath: /etc/secrets
