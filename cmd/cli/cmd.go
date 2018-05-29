@@ -191,9 +191,6 @@ func NewCommand() (*cobra.Command, *int) {
 	rootCommand.PersistentFlags().String("systemd-unit-prefix", config.ViperConfig.GetString("systemd-unit-prefix"), "prefix for systemd unit name")
 	config.ViperConfig.BindPFlag("systemd-unit-prefix", rootCommand.PersistentFlags().Lookup("systemd-unit-prefix"))
 
-	rootCommand.PersistentFlags().Int("kubelet-cadvisor-port", config.ViperConfig.GetInt("kubelet-cadvisor-port"), "enable kubelet cAdvisor on port")
-	config.ViperConfig.BindPFlag("kubelet-cadvisor-port", rootCommand.PersistentFlags().Lookup("kubelet-cadvisor-port"))
-
 	rootCommand.PersistentFlags().String("kubectl-link", config.ViperConfig.GetString("kubectl-link"), "Path to create a kubectl link")
 	config.ViperConfig.BindPFlag("kubectl-link", rootCommand.PersistentFlags().Lookup("kubectl-link"))
 
