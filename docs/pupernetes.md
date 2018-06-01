@@ -13,7 +13,7 @@ Use this command to clean setup and run a Kubernetes local environment
       --cni-version string           container network interface (cni) version (default "0.7.0")
       --etcd-version string          etcd version (default "3.1.11")
   -h, --help                         help for pupernetes
-      --hyperkube-version string     hyperkube version (default "1.10.1")
+      --hyperkube-version string     hyperkube version (default "1.10.3")
       --kubectl-link string          Path to create a kubectl link
       --kubelet-root-dir string      directory path for managing kubelet files (default "/var/lib/p8s-kubelet")
       --systemd-unit-prefix string   prefix for systemd unit name (default "p8s-")

@@ -79,6 +79,16 @@ jobs:
           command: sudo timeout 10 ./pupernetes setup sandbox/ -c etcd,iptables,kubectl,kubelet,manifests,mounts,network,secrets
 
       - run:
+          name: version-setup
+          # it should download and extract the hyperkube tarball
+          command: sudo ./pupernetes setup sandbox/ --hyperkube-version 1.9.4
+
+      - run:
+          name: version-setup
+          # it should extract the default hyperkube tarball already present on disk
+          command: sudo ./pupernetes setup sandbox/
+
+      - run:
           name: clean
           command: sudo ./pupernetes clean sandbox/ -c all
 

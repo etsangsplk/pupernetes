@@ -161,62 +161,35 @@ func (r *Runtime) cleanIptables() error {
 	return nil
 }
 
-func (r *Runtime) startJournalTailers() ([]*logging.JournalTailer, error) {
-	failed, err := r.probeUnitStatuses()
-	if err != nil && len(failed) == 0 {
-		glog.Errorf("Probe units in failed: %v", err)
-		return nil, err
-	}
-	if len(failed) == 0 {
-		glog.V(2).Infof("All systemd units are healthy")
-		return nil, nil
-	}
-	// Display the logs of the failed units
-	var journalTailers []*logging.JournalTailer
+func (r *Runtime) runJournalTailers(failedUnits []string) error {
 	var errs []string
 
-	for _, unitName := range failed {
-		jt, err := logging.NewJournalTailer(unitName, r.runTimestamp)
+	// Display the logs of the failed units
+	for _, unitName := range failedUnits {
+		jt, err := logging.NewJournalTailer(unitName, r.runTimestamp, false)
 		if err != nil {
 			msg := fmt.Sprintf("cannot create journal tailer for %s: %v", unitName, err)
 			errs = append(errs, msg)
 			glog.Errorf("Unexpected error: %s", msg)
 			continue
 		}
-		journalTailers = append(journalTailers, jt)
 		err = jt.StartTail()
 		if err != nil {
 			msg := fmt.Sprintf("cannot start journal tailer for %s: %v", unitName, err)
 			errs = append(errs, msg)
 			glog.Errorf("Unexpected error: %s", msg)
+			continue
 		}
-	}
-	if len(errs) == 0 {
-		return journalTailers, nil
-	}
-	return journalTailers, fmt.Errorf("failed to start journal tailers: %s", strings.Join(errs, ", "))
-}
-
-func stopJournalTailers(journalTailers []*logging.JournalTailer) error {
-	if len(journalTailers) == 0 {
-		glog.V(3).Infof("No journal tailers to stop")
-		return nil
-	}
-	// let time to display logs
-	time.Sleep(time.Second * 2)
-
-	var errs []string
-	for _, jt := range journalTailers {
-		err := jt.StopTail()
+		err = jt.Wait()
 		if err != nil {
-			glog.Errorf("Fail to stop the journal tailer: %v", err)
 			errs = append(errs, err.Error())
+			glog.Errorf("Fail to wait on journal tailer of %s: %v", unitName, err)
 		}
 	}
 	if len(errs) == 0 {
 		return nil
 	}
-	return fmt.Errorf("fail to stop journal tailers: %v", strings.Join(errs, ", "))
+	return fmt.Errorf("failed to start journal tailers: %s", strings.Join(errs, ", "))
 }
 
 func (r *Runtime) Stop() error {
@@ -233,18 +206,19 @@ func (r *Runtime) Stop() error {
 		errs = append(errs, err.Error())
 	}
 
-	journalTailers, err := r.startJournalTailers()
-	if err != nil {
-		glog.Errorf("Fail to start journalTailers: %v", err)
-		errs = append(errs, err.Error())
-	}
-	if len(journalTailers) > 0 {
-		errs = append(errs, "systemd units unhealthy")
+	failed, err := r.probeUnitStatuses()
+	if err != nil && len(failed) == 0 {
+		glog.Errorf("Probe units in failed: %v", err)
+		return err
 	}
 
-	err = stopJournalTailers(journalTailers)
-	if err != nil {
-		errs = append(errs, err.Error())
+	if len(failed) != 0 {
+		errs = append(errs, fmt.Sprintf("systemd units unhealthy: %s", strings.Join(failed, ", ")))
+		err := r.runJournalTailers(failed)
+		if err != nil {
+			glog.Errorf("Fail to run journalTailers: %v", err)
+			errs = append(errs, err.Error())
+		}
 	}
 
 	for _, u := range r.env.GetSystemdUnits() {
